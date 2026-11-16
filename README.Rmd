@@ -160,7 +160,7 @@ ggplot() +
   )
 ```
 
-This repository contains geospatial data files that contain the GRDC's agroecozone classifications as:
+This repository contains geospatial data files that contain the GRDC's agroecozone classifications in EPSG:4326 (unprojected) as:
 
 - [geopackage (.gpkg) file](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/aez.gpkg),
 - [shapefile](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/shapefile.zip), and

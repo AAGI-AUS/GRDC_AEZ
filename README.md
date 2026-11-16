@@ -1,8 +1,13 @@
 # GRDC Agroecozones
 
+
+```
+## Linking to GEOS 3.13.0, GDAL 3.8.5, PROJ 9.5.1; sf_use_s2() is TRUE
+```
+
 ![plot of chunk map](figure/map-1.png)
 
-This repository contains geospatial data files that contain the GRDC's agroecozone classifications as:
+This repository contains geospatial data files that contain the GRDC's agroecozone classifications in EPSG:4326 (unprojected) as:
 
 - [geopackage (.gpkg) file](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/aez.gpkg),
 - [shapefile](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/shapefile.zip), and
