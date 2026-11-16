@@ -1,4 +1,4 @@
-Geospatial data file that contains the GRDC's agroecozone classifications.
+Geospatial data file that contains the GRDC's agroecozone classifications as a geopackage (.gpkg) file.
 
 See: https://data.grdc.com.au/item/6798/dataset/australian-statistical-geography-standard for more details.
 
