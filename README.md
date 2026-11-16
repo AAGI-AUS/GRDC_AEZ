@@ -1,6 +1,16 @@
-Geospatial data file that contains the GRDC's agroecozone classifications as a geopackage (.gpkg) file.
+# GRDC Agroecozones
+
+![plot of chunk map](figure/map-1.png)
+
+This repository contains geospatial data files that contain the GRDC's agroecozone classifications as:
+
+- [geopackage (.gpkg) file](aez.gpkg),
+- [shapefile](shapefile.zip), and
+- [native R .Rds](aez.Rds) file providing an {sf} object with the AEZ field as a `factor`.
 
 See: https://data.grdc.com.au/item/6798/dataset/australian-statistical-geography-standard for more details.
+
+## Licence
 
 CC-BY
 

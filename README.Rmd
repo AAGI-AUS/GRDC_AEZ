@@ -1,0 +1,175 @@
+# GRDC Agroecozones
+
+```{r}
+#| label: map
+#| echo: false
+
+library(sf)
+library(ggplot2)
+library(colorspace)
+library(ozmaps)
+library(ggrepel)
+library(ggspatial)
+
+# 1. Read the data and project it (GDA2020 / Australian Albers, metres)
+aez <- readRDS("aez.Rds") |> st_transform(9473)
+aus <- ozmap_data() |> st_transform(9473)
+
+# 2. Neighbours: zones within 1 m of each other count as touching
+nb <- st_is_within_distance(aez, aez, dist = 1)
+nb <- Map(setdiff, nb, seq_along(nb))
+
+# 3. Exact colouring; prefers the least-used colour to keep things balanced
+colour_exact <- function(nb, k) {
+  n <- length(nb)
+  ord <- order(-lengths(nb))
+  col <- rep(NA_integer_, n)
+  solve <- function(pos) {
+    if (pos > n) {
+      return(TRUE)
+    }
+    i <- ord[pos]
+    ok <- setdiff(seq_len(k), col[nb[[i]]])
+    ok <- ok[order(tabulate(col[!is.na(col)], k)[ok])]
+    for (cc in ok) {
+      col[i] <<- cc
+      if (solve(pos + 1)) {
+        return(TRUE)
+      }
+    }
+    col[i] <<- NA
+    FALSE
+  }
+  if (solve(1)) col else NULL
+}
+
+for (k in 2:6) {
+  ids <- colour_exact(nb, k)
+  if (!is.null(ids)) break
+}
+aez$colour_id <- ids
+
+# 4. Okabe-Ito: sky blue, orange, reddish purple (yellow as a spare)
+all_cols <- unname(palette.colors(palette = "Okabe-Ito"))
+pal <- lighten(all_cols[c(3, 2, 8, 5)], 0.2)[seq_len(k)]
+
+# 5. Label positions
+xy <- st_coordinates(st_point_on_surface(st_geometry(aez)))
+lab <- data.frame(AEZ = as.character(aez$AEZ), x = xy[, 1], y = xy[, 2])
+
+# Zones labelled outside with a pointer. dx/dy move the label away from the
+# zone's label point, in km (east and north positive). Any zone not listed
+# here is labelled inside its own polygon.
+move <- data.frame(
+  AEZ = c(
+    "Qld Atherton",
+    "Qld Burdekin",
+    "NSW NE/Qld SE",
+    "NSW NW/Qld SW",
+    "Tas Grain",
+    "Vic High Rainfall",
+    "SA Vic Bordertown-Wimmera",
+    "SA Midnorth-Lower Yorke Eyre",
+    "WA Sandplain",
+    "WA Northern",
+    "WA Central",
+    "WA Eastern"
+  ),
+  dx = c(450, 450, 450, -450, 420, -300, -250, -200, 0, -450, -800, 0),
+  dy = c(0, 0, 0, 0, -80, -300, -420, -420, -420, 0, 0, 450)
+)
+lab <- merge(lab, move, by = "AEZ", all.x = TRUE)
+lab$outside <- !is.na(lab$dx)
+
+# Line breaks: always after "/", otherwise by width (wider outside the zones)
+wrap <- function(z, w) {
+  parts <- strsplit(z, "(?<=/)", perl = TRUE)[[1]]
+  paste(unlist(lapply(parts, strwrap, width = w)), collapse = "\n")
+}
+lab$text <- mapply(wrap, lab$AEZ, ifelse(lab$outside, 18, 12))
+
+lab_in <- subset(lab, !outside)
+lab_out <- subset(lab, outside)
+
+# 6. Map (no legend: fills only separate neighbours, they carry no meaning)
+# Plot window from the mainland and Tasmania only (parts bigger than 50,000 km2),
+# so far-off islands such as Macquarie Island don't stretch the map
+parts <- st_cast(st_cast(st_geometry(aus), "MULTIPOLYGON"), "POLYGON")
+bb_main <- st_bbox(parts[as.numeric(st_area(parts)) > 5e10])
+
+ggplot() +
+  geom_sf(data = aus, fill = "#F1E9D2") +
+  geom_sf(
+    data = aez,
+    aes(fill = factor(colour_id)),
+    colour = "#FAF8E9",
+    linewidth = 0.4
+  ) +
+  scale_fill_manual(values = pal, guide = "none") +
+  # labels that fit inside their zone
+  geom_text_repel(
+    data = lab_in,
+    aes(x, y, label = text),
+    size = 2.6,
+    lineheight = 0.9,
+    bg.color = "#FAF8E9",
+    bg.r = 0.15,
+    force = 0, # labels stay put: repel is only used for its halo
+    min.segment.length = Inf,
+    max.overlaps = Inf
+  ) +
+  # labels placed outside: a dot marks the zone, a line points to the label
+  geom_point(data = lab_out, aes(x, y), size = 0.8) +
+  geom_text_repel(
+    data = lab_out,
+    aes(x, y, label = text),
+    nudge_x = lab_out$dx * 1000,
+    nudge_y = lab_out$dy * 1000,
+    size = 2.6,
+    lineheight = 0.9,
+    bg.color = "#FAF8E9",
+    bg.r = 0.15,
+    min.segment.length = 0,
+    segment.colour = "grey25",
+    box.padding = 0.3,
+    max.overlaps = Inf,
+    seed = 1
+  ) +
+  annotation_north_arrow(
+    location = "bl",
+    which_north = "true",
+    pad_x = unit(0.4, "in"),
+    pad_y = unit(0.4, "in"),
+    height = unit(1.4, "cm"),
+    width = unit(1.4, "cm"),
+    style = north_arrow_orienteering()
+  ) +
+  labs(
+    title = "The GRDC Agroecological Zones of Australia",
+    caption = "Data: GRDC agroecological zones (CC BY 4.0)"
+  ) +
+  coord_sf(
+    xlim = c(bb_main["xmin"] - 600e3, bb_main["xmax"] + 450e3),
+    ylim = c(bb_main["ymin"] - 150e3, bb_main["ymax"] + 100e3),
+    expand = FALSE
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme_bw() +
+  theme(
+    panel.background = element_rect(fill = "#7EB5C2")
+  )
+```
+
+This repository contains geospatial data files that contain the GRDC's agroecozone classifications as:
+
+- [geopackage (.gpkg) file](aez.gpkg),
+- [shapefile](shapefile.zip), and
+- [native R .Rds](aez.Rds) file providing an {sf} object with the AEZ field as a `factor`.
+
+See: https://data.grdc.com.au/item/6798/dataset/australian-statistical-geography-standard for more details.
+
+## Licence
+
+CC-BY
+
+[Creative Commons Attribution 4.0 International licence](http://creativecommons.org/licenses/by/4.0/)
