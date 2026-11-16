@@ -162,9 +162,9 @@ ggplot() +
 
 This repository contains geospatial data files that contain the GRDC's agroecozone classifications as:
 
-- [geopackage (.gpkg) file](aez.gpkg),
-- [shapefile](shapefile.zip), and
-- [native R .Rds](aez.Rds) file providing an {sf} object with the AEZ field as a `factor`.
+- [geopackage (.gpkg) file](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/aez.gpkg),
+- [shapefile](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/shapefile.zip), and
+- [native R .Rds](https://github.com/AAGI-AUS/GRDC_AEZ/raw/refs/heads/main/aez.Rds) file providing an {sf} object with the AEZ field as a `factor`.
 
 ## Licence
 
